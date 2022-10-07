@@ -57,3 +57,6 @@ project/project/
 .history
 .cache
 .lib/
+
+### Scala ###
+.bsp/

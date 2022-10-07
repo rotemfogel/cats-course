@@ -30,7 +30,7 @@ object Monads {
     } yield (n, c)
 
   // futures
-  val es: ExecutorService = Executors.newFixedThreadPool(2)
+  val es: ExecutorService = Executors.newFixedThreadPool(6)
   implicit val ec: ExecutionContext = ExecutionContext.fromExecutorService(es)
   val numberFuture: Future[Int] = Future(2)
   val charFuture: Future[Char] = Future('d')
@@ -46,16 +46,18 @@ object Monads {
   /**
    * We have 3 different data types (List/Option/Future) which can be combined
    * with the same patterns:
-   * 1. wrap a value to an M value (List,Try,Option...)
-   * 2. transform M values using flatMap
+   * 1. wrap a value to a Monadic value
+   * 2. use flatMap to transform Monadic values in sequence
    *
-   * The type class the formalizes this behavior
-   * is a Monad
+   * The type class the formalizes this behavior is a Monad
+   *
+   * A Monad also extends Functor, since it has a map method
    */
   trait A_Monad[M[_]] {
     def pure[A](a: A): M[A]
-
-    def flatMap[A, B](ma: M[A], f: (A => M[B])): M[B]
+    def flatMap[A, B](ma: M[A])(f: A => M[B]): M[B]
+    // TODO: implement the map method in A_Monad
+    def map[A, B](ma: M[A])(f: A => B): M[B] = flatMap(ma)(a => pure(f(a)))
   }
 
   import cats.Monad
@@ -84,15 +86,41 @@ object Monads {
    * the same implementation for different types:
    *
    * def getPairsList(numbers: List[Int], chars: List[Char]): List[(Int, Char)] =
-   *   numbers.flatMap(n => chars.map(c => (n, c)))
+   * numbers.flatMap(n => chars.map(c => (n, c)))
    * def getPairsOption(number: Option[Int], char: Option[Char]): Option[(Int, Char)] =
-   *   number.flatMap(n => char.map(c => (n, c)))
+   * number.flatMap(n => char.map(c => (n, c)))
    * def getPairsFuture(number: Future[Int], char: Future[Char]): Future[(Int, Char)] =
-   *   number.flatMap(n => char.map(c => (n, c)))
+   * number.flatMap(n => char.map(c => (n, c)))
    */
   // Monads help generalize the problem above
   def getPairs[M[_], A, B](ma: M[A], mb: M[B])(implicit monad: Monad[M]): M[(A, B)] =
     monad.flatMap(ma)(a => monad.map(mb)(b => (a, b)))
+
+  // Monads extension methods - pure, flatMap
+
+  import cats.syntax.applicative._
+
+  val oneOption: Option[Int] = 1.pure[Option] // implicit Monad[Option] - wrap 1 with Option -> Some(1)
+  val oneList: List[Int] = 1.pure[List] // implicit Monad[List]
+  val oneOptionTransformed = oneOption.flatMap(x => (x + 1).pure[Option])
+
+  // Monad extends Functor
+  val oneOptionMapped = Monad[Option].map(oneOption)(_ + 1)
+  // Since Monad has access to map (Functors) and flatMap
+  // we can also support for comprehensions
+  val combinedOptions = for {
+    one <- 1.pure[Option]
+    two <- 2.pure[Option]
+  } yield one + two
+
+  // TODO: a shorter version of getPairs with for comprehensions
+  import cats.syntax.flatMap._
+  import cats.syntax.functor._
+  def getPairsFor[M[_] : Monad, A, B](ma: M[A], mb: M[B]): M[(A, B)] =
+    for {
+      a <- ma
+      b <- mb
+    } yield (a, b)
 
   def main(args: Array[String]): Unit = {
     assert(combinations1 == combinations2)
@@ -100,10 +128,22 @@ object Monads {
     println(transformed)
     println(transformedList)
     transformedFuture.foreach(println)
+    println("-" * 30)
     // use monad
     println(getPairs(numbersList, charsList))
     println(getPairs(numberOption, charOption))
     getPairs(numberFuture, charFuture).foreach(println)
+    println("-" * 30)
+    println(oneList)
+    println(oneOptionTransformed)
+    println(oneOptionMapped)
+    println(combinedOptions)
+    println("-" * 30)
+    // getPairsFor
+    println(getPairsFor(numbersList, charsList))
+    println(getPairsFor(numberOption, charOption))
+    getPairsFor(numberFuture, charFuture).foreach(println)
+
     es.awaitTermination(1, TimeUnit.SECONDS)
     es.shutdown()
   }
