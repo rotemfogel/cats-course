@@ -1,4 +1,4 @@
-package abstractmath
+package abstractmath.semgroup
 
 object Semigroups {
 
@@ -11,11 +11,13 @@ object Semigroups {
   val intCombine: Int = intSemigroup.combine(2, 4) // default combine method is addition
 
   import cats.instances.string._
+
   val stringSemigroup: Semigroup[String] = Semigroup[String]
   val stringCombine: String = stringSemigroup.combine("Hello ", "World!") // default combine method is concat
 
   // specific API
   def reduceList(list: List[Int]): Int = list.reduce(intSemigroup.combine)
+
   def reduceList(list: List[String]): String = list.reduce(stringSemigroup.combine)
 
   // general API
@@ -27,9 +29,12 @@ object Semigroups {
     Semigroup.instance[Expense]((x: Expense, y: Expense) => Expense(math.max(x.id, y.id), x.amount + y.amount))
 
   // extension methods from Semigroup - |+|
+
   import cats.syntax.semigroup._
+
   val combinedInt: Int = 1 |+| 2 // combine will require an implicit Semigroup[Int]
   val concatString: String = "combined " |+| "String"
+
   // shorter version with combine operator
   def reduceThings2[T: Semigroup](list: List[T]): T = list.reduce((_: T) |+| (_: T))
 

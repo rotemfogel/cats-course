@@ -1,5 +1,6 @@
 package intro
 
+//noinspection ScalaUnusedSymbol
 object TypeClassVariance {
 
   import cats.implicits.catsSyntaxEq
@@ -32,6 +33,7 @@ object TypeClassVariance {
 
   implicit object AnimalSoundMaker extends SoundMaker[Animal]
 
+  //noinspection SpellCheckingInspection
   def makeSound[T](implicit soundMaker: SoundMaker[T]): Unit = println("Arghh")
 
   makeSound[Animal] // type class instance defined above

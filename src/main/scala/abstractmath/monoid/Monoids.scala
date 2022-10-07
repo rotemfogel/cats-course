@@ -1,4 +1,4 @@
-package abstractmath
+package abstractmath.monoid
 
 object Monoids {
 
@@ -60,7 +60,9 @@ object Monoids {
     }
     object ShoppingCart {
       def empty: ShoppingCart = ShoppingCart(List(), 0)
+
       def apply(item: Item): ShoppingCart = ShoppingCart(List(item), item.amount)
+
       def apply(items: List[Item]): ShoppingCart = {
         ShoppingCart(items, items.map((_: Item).amount).sum)
       }
