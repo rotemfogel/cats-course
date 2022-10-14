@@ -68,7 +68,7 @@ object Writers {
   /*
     benefits of using Writers:
     1. work with pure FP (no side effects)
-    2.
+    2. Writers can keep logs separate on multiple threads (see line #112)
    */
 
   // TODO: rewrite the function with Writer[T]
