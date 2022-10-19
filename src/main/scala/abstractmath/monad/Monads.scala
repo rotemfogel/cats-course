@@ -128,6 +128,7 @@ object Monads {
       b <- mb
     } yield (a, b)
 
+  //noinspection DuplicatedCode
   def main(args: Array[String]): Unit = {
     assert(combinations1 == combinations2)
     assert(combined1 == combined2)
