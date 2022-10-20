@@ -54,7 +54,6 @@ object Monads {
    *
    * A Monad also extends Functor, since it has a map method
    */
-  //noinspection ScalaUnusedSymbol
   trait A_Monad[M[_]] {
     def pure[A](a: A): M[A]
 
@@ -62,6 +61,8 @@ object Monads {
 
     // TODO: implement the map method in A_Monad
     def map[A, B](ma: M[A])(f: A => B): M[B] = flatMap(ma)((a: A) => pure(f(a)))
+
+    def product[A, B](ma: M[A], mb: M[B]): M[(A, B)] = flatMap(ma)((a: A) => map(mb)((b: B) => (a, b)))
   }
 
   import cats.Monad
@@ -96,12 +97,15 @@ object Monads {
    * def getPairsFuture(number: Future[Int], char: Future[Char]): Future[(Int, Char)] =
    * number.flatMap(n => char.map(c => (n, c)))
    */
-  // Monads help generalize the problem above
+
+  /**
+   * Monads help generalize the problem above
+   */
+  //noinspection DuplicatedCode
   def getPairs[M[_], A, B](ma: M[A], mb: M[B])(implicit monad: Monad[M]): M[(A, B)] =
     monad.flatMap(ma)((a: A) => monad.map(mb)((b: B) => (a, b)))
 
   // Monads extension methods - pure, flatMap
-
   import cats.syntax.applicative._
 
   val oneOption: Option[Int] = 1.pure[Option] // implicit Monad[Option] - wrap 1 with Option -> Some(1)
