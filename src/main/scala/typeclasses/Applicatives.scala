@@ -31,7 +31,7 @@ object Applicatives {
   validateApplicative.pure(Validated.valid(1))
 
   // TODO: thought experiment
-  def ap[F[_], B, T](f: F[B => T])(fa: F[B]): F[T] = ???
+  def ap[F[_], B, T](f: F[B => T])(fb: F[B]): F[T] = ???
   def product[F[_], A, B](fa: F[A], fb: F[B])(implicit applicative: Applicative[F]): F[(A, B)] = {
     ap(applicative.map(fa)((a: A) => (b: B) => (a, b)))(fb)
     // or applicative.ap(applicative.map(fa)(a => (b: B) => (a, b)))(fb)
