@@ -56,12 +56,9 @@ object Monads {
    */
   trait A_Monad[M[_]] {
     def pure[A](a: A): M[A]
-
     def flatMap[A, B](ma: M[A])(f: A => M[B]): M[B]
-
     // TODO: implement the map method in A_Monad
     def map[A, B](ma: M[A])(f: A => B): M[B] = flatMap(ma)((a: A) => pure(f(a)))
-
     def product[A, B](ma: M[A], mb: M[B]): M[(A, B)] = flatMap(ma)((a: A) => map(mb)((b: B) => (a, b)))
   }
 
