@@ -5,7 +5,7 @@ import cats.{Eval, Monoid}
 //noinspection DuplicatedCode
 object Folding {
 
-  object ListSupersizes {
+  object ListExcersizes {
     // TODO: Implement the following methods using foldLeft/foldRight
     def map[A, B](list: List[A])(f: A => B): List[B] =
       list.foldRight(List.empty[B])((a, b) => f(a) :: b)
@@ -46,7 +46,7 @@ object Folding {
   val mappedConcat2: String = List(1,2,3).foldMap(_.toString)
 
   def main(args: Array[String]): Unit = {
-    import ListSupersizes._
+    import ListExcersizes._
     println(map(list)(_ + 1))
     println(flatMap(list)(a => if (a % 2 == 0) List(-a) else List.empty[Int]))
     println(filter(list)(_ %2 == 0))
