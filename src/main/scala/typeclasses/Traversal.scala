@@ -1,11 +1,12 @@
 package typeclasses
 
-import cats.{Applicative, Monad}
+import cats.{Applicative, Foldable, Monad}
 
 import java.util.concurrent.{ExecutorService, Executors, TimeUnit}
+import scala.annotation.unused
 import scala.concurrent.{ExecutionContext, Future}
 
-//noinspection ScalaUnusedSymbol
+//noinspection ScalaUnusedSymbol,DuplicatedCode
 object Traversal {
 
   val es: ExecutorService = Executors.newFixedThreadPool(8)
@@ -61,8 +62,12 @@ object Traversal {
     list.foldLeft(List.empty[B].pure[F])((l: F[List[B]], a: A) => (l, f(a)).mapN((_: List[B]) :+ (_: B)))
 
   // TODO: implement
+  /**
+   * extract the inner wrapper outside and apply
+   * all the possible tuples between the elements
+   */
   def listSequence[F[_] : Applicative, A](list: List[F[A]]): F[List[A]] = {
-    list.foldLeft(List.empty[A].pure[F])((l, a) => (l, a).mapN(_ :+ _))
+    list.foldLeft(List.empty[A].pure[F])((l: F[List[A]], a: F[A]) => (l, a).mapN((_: List[A]) :+ (_: A)))
     // or
     // listTraverseApplicative(list)(identity)
   }
@@ -72,12 +77,44 @@ object Traversal {
   val result1: Vector[List[Int]] = listSequence(List(Vector(1, 2), Vector(3, 4)))
   // Vector(List(1,3),List(1,4),List(2,3), List(2,4))
   val result2: Vector[List[Int]] = listSequence(List(Vector(1, 2), Vector(3, 4), Vector(5, 6)))
-  // Vector(List(1, 3, 5), List(1, 3, 6), List(1, 4, 5), List(1, 4, 6), List(2, 3, 5), List(2, 3, 6), List(2, 4, 5), List(2, 4, 6))
+  // Vector(List(1,3,5), List(1,3,6), List(1,4,5), List(1,4,6), List(2,3,5), List(2,3,6), List(2,4,5), List(2,4,6))
 
-  /**
-   * extract the inner wrapper outside and apply
-   * all the possible tuples between the elements
-   */
+  def filterAsOption(list: List[Int])(predicate: Int => Boolean): Option[List[Int]] =
+    listTraverseApplicative[Option, Int, Int](list)((n: Int) => Some(n).filter(predicate))
+
+  // TODO: What is the output of this?
+  val fResult1: Option[List[Int]] = filterAsOption(List(2, 4, 6))((_: Int) % 2 == 0) // Some(List(2,4,6))
+  val fResult2: Option[List[Int]] = filterAsOption(List(1, 2, 3))((_: Int) % 2 == 0) // None - since combining None and Some yields None
+
+  import cats.data.Validated
+  type ErrorsOr[T] = Validated[List[String], T]
+  def filterAsValidated(list: List[Int])(predicate: Int => Boolean): ErrorsOr[List[Int]] =
+    listTraverseApplicative[ErrorsOr, Int, Int](list) { n =>
+      if (predicate(n)) Validated.valid(n)
+      else Validated.invalid(List(s"$n failed predicate"))
+    }
+
+  // TODO: What is the result?
+  val fResult3: ErrorsOr[List[Int]] = filterAsValidated(List(2, 4, 6))((_: Int) % 2 == 0) // Valid(List(2,4,6))
+  val fResult4: ErrorsOr[List[Int]] = filterAsValidated(List(1, 2, 3))((_: Int) % 2 == 0) // Invalid(List("1 failed..","3 failed.."))
+
+  @unused
+  trait A_Traverse[L[_]] extends Foldable[L]{
+    def traverse[F[_]: Applicative, A, B](container: L[A])(f: A => F[B]): F[L[B]]
+    def sequence[F[_]: Applicative, A](container: L[F[A]]): F[L[A]] =
+      traverse(container)(identity)
+    // TODO: implement using traverse and/or sequence
+    import cats.Id
+    def map[A, B](la: L[A])(f: A => B): L[B] = traverse[Id, A, B](la)(f)
+  }
+
+  import cats.Traverse
+  import cats.instances.future._ // Applicative[Future]
+  val allBandwidthsCats = Traverse[List].traverse(servers)(getBandwidth) // implicit Traverse[List]
+
+  // extension methods
+  import cats.syntax.traverse._
+  val bandwidthCats = servers.traverse(getBandwidth)
 
   def main(args: Array[String]): Unit = {
     allBandwidth.foreach(println)
@@ -86,6 +123,12 @@ object Traversal {
     println("-" * 30)
     println(result1)
     println(result2)
+    println("-" * 30)
+    println(fResult1)
+    println(fResult2)
+    println("-" * 30)
+    println(fResult3)
+    println(fResult4)
     es.awaitTermination(1, TimeUnit.SECONDS)
     es.shutdown()
   }
